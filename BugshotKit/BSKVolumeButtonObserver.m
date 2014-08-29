@@ -34,8 +34,6 @@ typedef BOOL(^BSKVolumeButtonObserverViewHierarchySearchHandler)(UIView *view);
 
 + (UIView *)firstDescendentOfView:(UIView *)view passingTest:(BOOL (^)(UIView *view))handler {
     
-    NSLog(@"%@", view);
-    
     UIView __block *matchingView = nil;
     
     for (UIView *subview in view.subviews) {
