@@ -8,6 +8,7 @@
 #import "BSKNavigationController.h"
 #import <asl.h>
 #import "MABGTimer.h"
+#import "BSKVolumeButtonObserver.h"
 
 @import CoreText;
 
@@ -50,6 +51,8 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 @property (nonatomic) BSKInvocationGestureMask invocationGestures;
 @property (nonatomic) NSUInteger invocationGesturesTouchCount;
 
+@property (strong, nonatomic) BSKVolumeButtonObserver *volumeButtonObserver;
+
 @end
 
 @implementation BugshotKit
@@ -70,6 +73,10 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     BugshotKit.sharedManager.invocationGestures = invocationGestures;
     BugshotKit.sharedManager.invocationGesturesTouchCount = fingerCount;
     BugshotKit.sharedManager.destinationEmailAddress = toEmailAddress;
+    
+    if (invocationGestures & BSKInvocationGesture_VolumeButton_DoubleTap) {
+        BugshotKit.sharedManager.volumeButtonObserver = [[BSKVolumeButtonObserver alloc] init];
+    }
     
     // dispatched to next main-thread loop so the app delegate has a chance to set up its window
     dispatch_async(dispatch_get_main_queue(), ^{

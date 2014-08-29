@@ -21,6 +21,7 @@ typedef enum : NSUInteger {
     BSKInvocationGestureDoubleTap = (1 << 3),
     BSKInvocationGestureTripleTap = (1 << 4),
 	BSKInvocationGestureLongPress = (1 << 5),
+    BSKInvocationGesture_VolumeButton_DoubleTap = (1 << 6),
 } BSKInvocationGestureMask;
 
 @interface BugshotKit : NSObject <UIGestureRecognizerDelegate, BSKMainViewControllerDelegate>
