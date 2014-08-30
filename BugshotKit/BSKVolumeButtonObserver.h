@@ -10,6 +10,14 @@
 
 @interface BSKVolumeButtonObserver : NSObject
 
-+ (UIView *)firstDescendentOfView:(UIView *)view passingTest:(BOOL (^)(UIView *view))handler;
+/**
+ Defaults to NO.
+ */
+@property (assign, nonatomic) BOOL allowBugshotWhenAudioIsPlaying;
+
+/**
+ Defaults to NO.
+ */
+@property (assign, nonatomic) BOOL allowBugshotWhenVideoIsPlaying;
 
 @end

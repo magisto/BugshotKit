@@ -115,6 +115,18 @@ typedef enum : NSUInteger {
 @property (nonatomic, copy) NSString *(^emailSubjectBlock)(NSDictionary *info);
 @property (nonatomic, copy) NSString *(^emailBodyBlock)(NSDictionary *info);
 
+#pragma mark - Volume Button Options
+
+/**
+ Defaults to NO.
+ */
+@property (assign, nonatomic) BOOL allowBugshotVolumeTapTriggerWhenAudioIsPlaying;
+
+/**
+ Defaults to NO.
+ */
+@property (assign, nonatomic) BOOL allowBugshotVolumeTapTriggerWhenVideoIsPlaying;
+
 @end
 
 UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)());

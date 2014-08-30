@@ -51,14 +51,13 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 @property (nonatomic) BSKInvocationGestureMask invocationGestures;
 @property (nonatomic) NSUInteger invocationGesturesTouchCount;
 
-@property (strong, nonatomic) BSKVolumeButtonObserver *volumeButtonObserver;
+@property (strong, nonatomic, readwrite) BSKVolumeButtonObserver *volumeButtonObserver;
 
 @end
 
 @implementation BugshotKit
 
-+ (instancetype)sharedManager
-{
++ (instancetype)sharedManager {
     static dispatch_once_t onceToken;
     static BugshotKit *sharedManager;
     dispatch_once(&onceToken, ^{
@@ -67,57 +66,56 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     return sharedManager;
 }
 
-+ (void)enableWithNumberOfTouches:(NSUInteger)fingerCount performingGestures:(BSKInvocationGestureMask)invocationGestures feedbackEmailAddress:(NSString *)toEmailAddress
-{
-    if (BugshotKit.sharedManager.isDisabled) return;
++ (void)enableWithNumberOfTouches:(NSUInteger)fingerCount performingGestures:(BSKInvocationGestureMask)invocationGestures feedbackEmailAddress:(NSString *)toEmailAddress {
+    
+    // EARLY RETURN for App Store builds.
+    if (BugshotKit.sharedManager.isDisabled) {
+        return;
+    }
+    
     BugshotKit.sharedManager.invocationGestures = invocationGestures;
     BugshotKit.sharedManager.invocationGesturesTouchCount = fingerCount;
     BugshotKit.sharedManager.destinationEmailAddress = toEmailAddress;
-    
-    if (invocationGestures & BSKInvocationGesture_VolumeButton_DoubleTap) {
-        BugshotKit.sharedManager.volumeButtonObserver = [[BSKVolumeButtonObserver alloc] init];
-    }
     
     // dispatched to next main-thread loop so the app delegate has a chance to set up its window
     dispatch_async(dispatch_get_main_queue(), ^{
         [BugshotKit.sharedManager ensureWindow];
         [BugshotKit.sharedManager attachToWindow:BugshotKit.sharedManager.window];
+        if (invocationGestures & BSKInvocationGesture_VolumeButton_DoubleTap) {
+            BugshotKit *manager = [BugshotKit sharedManager];
+            manager.volumeButtonObserver = [[BSKVolumeButtonObserver alloc] init];
+            manager.volumeButtonObserver.allowBugshotWhenAudioIsPlaying = manager.allowBugshotVolumeTapTriggerWhenAudioIsPlaying;
+            manager.volumeButtonObserver.allowBugshotWhenVideoIsPlaying = manager.allowBugshotVolumeTapTriggerWhenVideoIsPlaying;
+        }
     });
 }
 
-+ (void)show
-{
++ (void)show {
     [BugshotKit.sharedManager ensureWindow];
     [BugshotKit.sharedManager handleOpenGesture:nil];
 }
 
-+ (void)setExtraInfoBlock:(NSDictionary *(^)())extraInfoBlock
-{
++ (void)setExtraInfoBlock:(NSDictionary *(^)())extraInfoBlock {
     BugshotKit.sharedManager.extraInfoBlock = extraInfoBlock;
 }
 
-+ (void)setEmailSubjectBlock:(NSString *(^)(NSDictionary *))emailSubjectBlock
-{
++ (void)setEmailSubjectBlock:(NSString *(^)(NSDictionary *))emailSubjectBlock {
     BugshotKit.sharedManager.emailSubjectBlock = emailSubjectBlock;
 }
 
-+ (void)setEmailBodyBlock:(NSString *(^)(NSDictionary *))emailBodyBlock;
-{
++ (void)setEmailBodyBlock:(NSString *(^)(NSDictionary *))emailBodyBlock; {
     BugshotKit.sharedManager.emailBodyBlock = emailBodyBlock;
 }
 
-+ (void)setMailComposeCustomizeBlock:(void (^)(MFMailComposeViewController *mailComposer))mailComposeCustomizeBlock
-{
++ (void)setMailComposeCustomizeBlock:(void (^)(MFMailComposeViewController *mailComposer))mailComposeCustomizeBlock {
     BugshotKit.sharedManager.mailComposeCustomizeBlock = mailComposeCustomizeBlock;
 }
 
-+ (void)setDisplayConsoleTextInLogViewer:(BOOL)displayText
-{
++ (void)setDisplayConsoleTextInLogViewer:(BOOL)displayText {
     BugshotKit.sharedManager.displayConsoleTextInLogViewer = displayText;
 }
 
-+ (UIFont *)consoleFontWithSize:(CGFloat)size
-{
++ (UIFont *)consoleFontWithSize:(CGFloat)size {
     static dispatch_once_t onceToken;
     static NSString *consoleFontName;
     dispatch_once(&onceToken, ^{
@@ -148,8 +146,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     return [UIFont fontWithName:consoleFontName size:size];
 }
 
-- (instancetype)init
-{
+- (instancetype)init {
     if ( (self = [super init]) ) {
         if ([self.class isProbablyAppStoreBuild]) {
             self.isDisabled = YES;
@@ -197,16 +194,14 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     return self;
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIWindowDidBecomeVisibleNotification object:nil];
     if (! self.isDisabled) {
         dispatch_source_cancel(source);
     }
 }
 
-- (void)ensureWindow
-{
+- (void)ensureWindow {
     if (self.window) return;
     
     self.window = UIApplication.sharedApplication.keyWindow;
@@ -215,15 +210,13 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     if (! self.window.rootViewController) [[NSException exceptionWithName:NSGenericException reason:@"BugshotKit requires a rootViewController set on the window" userInfo:nil] raise];
 }
 
-- (void)newWindowDidBecomeVisible:(NSNotification *)n
-{
+- (void)newWindowDidBecomeVisible:(NSNotification *)n {
     UIWindow *newWindow = (UIWindow *) n.object;
     if (! newWindow || ! [newWindow isKindOfClass:UIWindow.class]) return;
     [self attachToWindow:newWindow];
 }
 
-- (void)attachToWindow:(UIWindow *)window
-{
+- (void)attachToWindow:(UIWindow *)window {
     if (self.isDisabled) return;
 
     if ([self.windowsWithGesturesAttached objectForKey:window]) return;
@@ -330,32 +323,27 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer { return YES; }
 
-- (void)leftEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr
-{
+- (void)leftEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr {
     if ([egr translationInView:self.window].x < 60) return;
     if (self.window.rootViewController.interfaceOrientation == UIInterfaceOrientationPortraitUpsideDown) [self handleOpenGesture:egr];
 }
 
-- (void)rightEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr
-{
+- (void)rightEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr {
     if ([egr translationInView:self.window].x > -60) return;
     if (self.window.rootViewController.interfaceOrientation == UIInterfaceOrientationPortrait) [self handleOpenGesture:egr];
 }
 
-- (void)topEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr
-{
+- (void)topEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr {
     if ([egr translationInView:self.window].y < 60) return;
     if (self.window.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeLeft) [self handleOpenGesture:egr];
 }
 
-- (void)bottomEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr
-{
+- (void)bottomEdgePanGesture:(UIScreenEdgePanGestureRecognizer *)egr {
     if ([egr translationInView:self.window].y > -60) return;
     if (self.window.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeRight) [self handleOpenGesture:egr];
 }
 
-- (void)handleOpenGesture:(UIGestureRecognizer *)sender
-{
+- (void)handleOpenGesture:(UIGestureRecognizer *)sender {
     if (self.isShowing) return;
 
     UIInterfaceOrientation interfaceOrientation = self.window.rootViewController.interfaceOrientation;
@@ -421,8 +409,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     [presentingViewController presentViewController:nc animated:YES completion:NULL];
 }
 
-+ (void)dismissAninmated:(BOOL)animated completion:(void(^)())completion
-{
++ (void)dismissAninmated:(BOOL)animated completion:(void(^)())completion {
     UIViewController *presentingVC = BugshotKit.sharedManager.presentedNavigationController.presentingViewController;
     if (presentingVC) {
         [presentingVC dismissViewControllerAnimated:animated completion:completion];
@@ -432,8 +419,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     }
 }
 
-- (void)mainViewControllerDidClose:(BSKMainViewController *)mainViewController
-{
+- (void)mainViewControllerDidClose:(BSKMainViewController *)mainViewController {
     self.isShowing = NO;
     self.snapshotImage = nil;
     self.annotatedImage = nil;
@@ -442,9 +428,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 
 #pragma mark - Console logging
 
-- (void)currentConsoleLogWithDateStamps:(BOOL)dateStamps
-                         withCompletion:(void (^)(NSString *result))completion
-{
+- (void)currentConsoleLogWithDateStamps:(BOOL)dateStamps withCompletion:(void (^)(NSString *result))completion {
     dispatch_async(self.logQueue, ^{
         NSMutableString *string = [NSMutableString string];
 
@@ -466,8 +450,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     });
 }
 
-- (void)clearLog
-{
+- (void)clearLog {
     if (self.isDisabled) return;
     
     [self.consoleMessages removeAllObjects];
@@ -476,8 +459,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     });
 }
 
-+ (void)addLogMessage:(NSString *)message
-{
++ (void)addLogMessage:(NSString *)message {
     BugshotKit *manager = BugshotKit.sharedManager;
     if (manager.isDisabled) return;
     
@@ -490,8 +472,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 }
 
 // assumed to always be in logQueue
-- (void)addLogMessage:(NSString *)message timestamp:(NSTimeInterval)timestamp
-{
+- (void)addLogMessage:(NSString *)message timestamp:(NSTimeInterval)timestamp {
     BSKLogMessage *msg = [BSKLogMessage new];
     msg.message = message;
     msg.timestamp = timestamp;
@@ -504,8 +485,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 }
 
 // assumed to always be in logQueue
-- (BOOL)updateFromASL
-{
+- (BOOL)updateFromASL {
     pid_t myPID = getpid();
 
     // thanks http://www.cocoanetics.com/2011/03/accessing-the-ios-system-log/
@@ -540,8 +520,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 - (void)consoleImageWithSize:(CGSize)size
                     fontSize:(CGFloat)fontSize
              emptyBottomLine:(BOOL)emptyBottomLine
-              withCompletion:(void (^)(UIImage *result))completion
-{
+              withCompletion:(void (^)(UIImage *result))completion {
     [self currentConsoleLogWithDateStamps:NO withCompletion:^(NSString *consoleText) {
         NSUInteger characterLimit = (NSUInteger) ((size.width / (fontSize / 2.0f)) * (size.height / fontSize));
         if (consoleText.length > characterLimit) consoleText = [consoleText substringFromIndex:(consoleText.length - characterLimit)];
@@ -584,8 +563,8 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
 
 #pragma mark - App Store build detection
 
-+ (BOOL)isProbablyAppStoreBuild
-{
++ (BOOL)isProbablyAppStoreBuild {
+    
 #if TARGET_IPHONE_SIMULATOR
     return NO;
 #endif
@@ -593,26 +572,56 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     // Adapted from https://github.com/blindsightcorp/BSMobileProvision
 
     NSString *binaryMobileProvision = [NSString stringWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"embedded" ofType:@"mobileprovision"] encoding:NSISOLatin1StringEncoding error:NULL];
-    if (! binaryMobileProvision) return YES; // no provision
-
+    
+    if (! binaryMobileProvision) {
+        return YES; // no provision
+    }
+    
     NSScanner *scanner = [NSScanner scannerWithString:binaryMobileProvision];
     NSString *plistString;
-    if (! [scanner scanUpToString:@"<plist" intoString:nil] || ! [scanner scanUpToString:@"</plist>" intoString:&plistString]) return YES; // no XML plist found in provision
+    
+    if (! [scanner scanUpToString:@"<plist" intoString:nil] || ! [scanner scanUpToString:@"</plist>" intoString:&plistString]) {
+        return YES; // no XML plist found in provision
+    }
+    
     plistString = [plistString stringByAppendingString:@"</plist>"];
 
     NSData *plistdata_latin1 = [plistString dataUsingEncoding:NSISOLatin1StringEncoding];
     NSError *error = nil;
     NSDictionary *mobileProvision = [NSPropertyListSerialization propertyListWithData:plistdata_latin1 options:NSPropertyListImmutable format:NULL error:&error];
-    if (error) return YES; // unknown plist format
+    
+    if (error) {
+        return YES; // unknown plist format
+    }
 
-    if (! mobileProvision || ! mobileProvision.count) return YES; // no entitlements
+    if (! mobileProvision || ! mobileProvision.count) {
+        return YES; // no entitlements
+    }
     
-    if (mobileProvision[@"ProvisionsAllDevices"]) return NO; // enterprise provisioning
+    if (mobileProvision[@"ProvisionsAllDevices"]) {
+        return NO; // enterprise provisioning
+    }
     
-    if (mobileProvision[@"ProvisionedDevices"] && ((NSDictionary *)mobileProvision[@"ProvisionedDevices"]).count) return NO; // development or ad-hoc
+    if (mobileProvision[@"ProvisionedDevices"] && ((NSDictionary *)mobileProvision[@"ProvisionedDevices"]).count) {
+        return NO; // development or ad-hoc
+    }
 
     return YES; // expected development/enterprise/ad-hoc entitlements not found
 }
 
+#pragma mark - Volume Button Options
+
+- (void)setAllowBugshotVolumeTapTriggerWhenAudioIsPlaying:(BOOL)allowBugshotVolumeTapTriggerWhenAudioIsPlaying {
+    _allowBugshotVolumeTapTriggerWhenAudioIsPlaying = allowBugshotVolumeTapTriggerWhenAudioIsPlaying;
+    self.volumeButtonObserver.allowBugshotWhenAudioIsPlaying = _allowBugshotVolumeTapTriggerWhenAudioIsPlaying;
+}
+
+- (void)setAllowBugshotVolumeTapTriggerWhenVideoIsPlaying:(BOOL)allowBugshotVolumeTapTriggerWhenVideoIsPlaying {
+    _allowBugshotVolumeTapTriggerWhenVideoIsPlaying = allowBugshotVolumeTapTriggerWhenVideoIsPlaying;
+    self.volumeButtonObserver.allowBugshotWhenVideoIsPlaying = _allowBugshotVolumeTapTriggerWhenVideoIsPlaying;
+}
 
 @end
+
+
+

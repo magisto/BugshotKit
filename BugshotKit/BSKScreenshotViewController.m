@@ -105,6 +105,14 @@
     return self;
 }
 
+- (UIStatusBarAnimation)preferredStatusBarUpdateAnimation {
+    return UIStatusBarAnimationFade;
+}
+
+- (BOOL)prefersStatusBarHidden {
+    return self.navigationController.navigationBarHidden;
+}
+
 - (void)loadView
 {
     CGRect frame = UIScreen.mainScreen.applicationFrame;
@@ -165,6 +173,7 @@
     if (sender.state == UIGestureRecognizerStateRecognized && ! UIAccessibilityIsVoiceOverRunning()) {
         BOOL hidden = ! self.navigationController.navigationBarHidden;
         [self.navigationController setNavigationBarHidden:hidden animated:YES];
+        [self setNeedsStatusBarAppearanceUpdate];
         [UIView animateWithDuration:UINavigationControllerHideShowBarDuration animations:^{
             self.gridOverlay.alpha = hidden ? 0.0f : kGridOverlayOpacity;
         }];
