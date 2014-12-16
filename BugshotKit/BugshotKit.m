@@ -567,8 +567,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     
 #if TARGET_IPHONE_SIMULATOR
     return NO;
-#endif
-
+#else
     // Adapted from https://github.com/blindsightcorp/BSMobileProvision
 
     NSString *binaryMobileProvision = [NSString stringWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"embedded" ofType:@"mobileprovision"] encoding:NSISOLatin1StringEncoding error:NULL];
@@ -607,6 +606,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     }
 
     return YES; // expected development/enterprise/ad-hoc entitlements not found
+#endif
 }
 
 #pragma mark - Volume Button Options
