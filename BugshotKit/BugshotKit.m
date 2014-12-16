@@ -495,7 +495,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
     aslresponse r = asl_search(NULL, q);
     BOOL foundNewEntries = NO;
     
-    while ( (m = aslresponse_next(r)) ) {
+    while ( (m = asl_next(r)) ) {
         if (myPID != atol(asl_get(m, ASL_KEY_PID))) continue;
 
         // dupe checking
@@ -511,7 +511,7 @@ UIImage *BSKImageWithDrawing(CGSize size, void (^drawingCommands)())
         [self addLogMessage:[NSString stringWithUTF8String:msg] timestamp:msgTime];
     }
     
-    aslresponse_free(r);
+    asl_release(r);
     asl_free(q);
 
     return foundNewEntries;
