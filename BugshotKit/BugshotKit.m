@@ -594,6 +594,11 @@ asl_object_t SystemSafeASLNext(asl_object_t r) {
 #if TARGET_IPHONE_SIMULATOR
     return NO;
 #else
+
+#ifndef APPSTORE // on debug & adhoc we want the feature to enabled even if it is via TestFlight
+    return NO;
+#endif
+
     // Adapted from https://github.com/blindsightcorp/BSMobileProvision
 
     NSString *binaryMobileProvision = [NSString stringWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"embedded" ofType:@"mobileprovision"] encoding:NSISOLatin1StringEncoding error:NULL];
